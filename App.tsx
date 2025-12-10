@@ -17,7 +17,10 @@ import {
   CalendarDays,
   LogOut,
   Lock,
-  User
+  User,
+  Timer,
+  ArrowRight,
+  CalendarClock
 } from 'lucide-react';
 import { generateAgenda } from './services/geminiService';
 import { Meeting, MeetingFormData, FilterState } from './types';
@@ -41,7 +44,7 @@ const getTodayString = () => {
   return `${year}-${month}-${day}`;
 };
 
-const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' }> = ({ 
+const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'white' }> = ({ 
   children, variant = 'primary', className = '', ...props 
 }) => {
   const baseStyles = "inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
@@ -51,6 +54,7 @@ const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant
     secondary: "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-indigo-500 shadow-sm",
     ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
     danger: "bg-red-50 text-red-600 hover:bg-red-100 focus:ring-red-500",
+    white: "bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm border border-white/20",
   };
 
   return (
@@ -98,19 +102,22 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-        <div className="bg-indigo-600 p-8 text-center">
-          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+        <div className="bg-indigo-600 p-8 text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white/10 blur-2xl"></div>
+          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 rounded-full bg-white/10 blur-2xl"></div>
+          
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm relative z-10">
             <CalendarDays size={32} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Cronos</h1>
-          <p className="text-indigo-100 mt-2">Gestão Inteligente de Reuniões</p>
+          <h1 className="text-2xl font-bold text-white relative z-10">Cronos</h1>
+          <p className="text-indigo-100 mt-2 relative z-10">Gestão Inteligente de Reuniões</p>
         </div>
         
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100 text-center">
-                {error}
+              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100 text-center flex items-center justify-center gap-2">
+                <CheckCircle2 size={16} className="text-red-500 rotate-45" /> {error}
               </div>
             )}
             
@@ -144,9 +151,9 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
 
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/30 transition-all shadow-lg shadow-indigo-200 mt-4"
+              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/30 transition-all shadow-lg shadow-indigo-200 mt-4 flex items-center justify-center gap-2"
             >
-              Entrar no Sistema
+              Entrar no Sistema <ArrowRight size={18} />
             </button>
           </form>
           
@@ -161,7 +168,6 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
 
 // 2. Dashboard Component (Authenticated View)
 const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onLogout }) => {
-  // Use a user-specific storage key
   const storageKey = `cronos_meetings_${user}`;
 
   const [meetings, setMeetings] = useState<Meeting[]>(() => {
@@ -180,11 +186,12 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
   const [formData, setFormData] = useState<MeetingFormData>(INITIAL_FORM_STATE);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Persist to local storage whenever meetings change
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(meetings));
   }, [meetings, storageKey]);
 
+  // --- Sorting & Filtering Logic ---
+  
   const filteredMeetings = useMemo(() => {
     return meetings
       .filter(m => {
@@ -193,8 +200,31 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                               m.description.toLowerCase().includes(filter.search.toLowerCase());
         return matchesStatus && matchesSearch;
       })
-      .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
+      .sort((a, b) => {
+        // Strict Sort: Date (asc) then Time (asc)
+        const dateA = new Date(`${a.date}T${a.time}`);
+        const dateB = new Date(`${b.date}T${b.time}`);
+        return dateA.getTime() - dateB.getTime();
+      });
   }, [meetings, filter]);
+
+  const nextMeeting = useMemo(() => {
+    const now = new Date();
+    // Filter only scheduled meetings
+    const scheduled = meetings.filter(m => m.status === 'scheduled');
+    
+    // Sort chronologically
+    scheduled.sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
+
+    // Find the first meeting that is in the future
+    const upcoming = scheduled.find(m => new Date(`${m.date}T${m.time}`) > now);
+    
+    // If no future meeting found but there are scheduled ones (e.g. today earlier), take the last one added or handle as needed. 
+    // Here we prefer strictly future, otherwise null.
+    return upcoming || null;
+  }, [meetings]);
+
+  // --- Handlers ---
 
   const handleOpenModal = (meeting?: Meeting) => {
     if (meeting) {
@@ -275,7 +305,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
       {/* Sidebar */}
       <aside className="w-full md:w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col h-auto md:h-screen sticky top-0 z-10">
         <div className="p-6 border-b border-slate-100 flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
             <CalendarDays size={20} />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-slate-800">Cronos</h1>
@@ -283,42 +313,34 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {/* User Info */}
-          <div className="mb-6 flex items-center gap-3 px-3 py-3 bg-indigo-50/50 rounded-lg border border-indigo-100">
-            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700">
-               <User size={16} />
+          <div className="mb-6 flex items-center gap-3 px-3 py-3 bg-gradient-to-r from-slate-50 to-white rounded-lg border border-slate-200">
+            <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 ring-2 ring-white shadow-sm">
+               <User size={18} />
             </div>
             <div className="overflow-hidden">
-              <p className="text-xs text-slate-500 font-medium">Logado como</p>
+              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Logado como</p>
               <p className="text-sm font-bold text-slate-800 truncate">{user}</p>
             </div>
           </div>
 
           <button onClick={() => setFilter({ ...filter, status: 'all' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'all' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
             <LayoutDashboard size={18} /> Visão Geral
-            <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs">{stats.total}</span>
+            <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.total}</span>
           </button>
           
           <button onClick={() => setFilter({ ...filter, status: 'scheduled' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'scheduled' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
             <Calendar size={18} /> Agendadas
-            <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs">{stats.scheduled}</span>
+            <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.scheduled}</span>
           </button>
           
           <button onClick={() => setFilter({ ...filter, status: 'completed' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'completed' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
             <CheckCircle2 size={18} /> Finalizadas
-            <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs">{stats.completed}</span>
+            <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.completed}</span>
           </button>
-
-          <div className="mt-8 px-3">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Resumo</h3>
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
-              <p className="text-indigo-100 text-xs mb-1">Próximas</p>
-              <p className="text-2xl font-bold">{stats.scheduled}</p>
-            </div>
-          </div>
         </nav>
 
         <div className="p-4 border-t border-slate-100 space-y-2">
-           <Button onClick={() => handleOpenModal()} className="w-full gap-2 shadow-indigo-200">
+           <Button onClick={() => handleOpenModal()} className="w-full gap-2 shadow-lg shadow-indigo-200 hover:shadow-indigo-300">
              <Plus size={18} /> Nova Reunião
            </Button>
            <button onClick={onLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
@@ -328,10 +350,10 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
       </aside>
 
       {/* Main Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 md:px-8 flex-shrink-0">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 md:px-8 flex-shrink-0 z-20">
           <h2 className="text-lg font-semibold text-slate-800">
-            {filter.status === 'all' ? 'Todas as Reuniões' : filter.status === 'scheduled' ? 'Reuniões Agendadas' : 'Histórico Completo'}
+            {filter.status === 'all' ? 'Visão Geral' : filter.status === 'scheduled' ? 'Próximos Compromissos' : 'Histórico de Reuniões'}
           </h2>
           <div className="relative w-64 md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -340,111 +362,193 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
               placeholder="Buscar reunião..." 
               value={filter.search}
               onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
             />
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
-          {filteredMeetings.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                <Calendar size={32} className="text-slate-300" />
-              </div>
-              <p className="text-lg font-medium text-slate-600">Nenhuma reunião encontrada</p>
-              <p className="text-sm">Comece organizando sua agenda.</p>
-              <Button onClick={() => handleOpenModal()} variant="secondary" className="mt-6">Criar Reunião</Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {filteredMeetings.map(meeting => (
-                <div key={meeting.id} className={`group relative bg-white rounded-xl border transition-all duration-200 ${meeting.status === 'completed' ? 'border-slate-200 bg-slate-50/50' : 'border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200'}`}>
-                  <div className="p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                           <h3 className={`font-bold text-lg ${meeting.status === 'completed' ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{meeting.title}</h3>
-                           {meeting.status === 'completed' && <Badge color="bg-green-100 text-green-700">Finalizada</Badge>}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mt-2">
-                          <div className="flex items-center gap-1.5"><Calendar size={14} />{new Date(meeting.date).toLocaleDateString('pt-BR')}</div>
-                          <div className="flex items-center gap-1.5"><Clock size={14} />{meeting.time} | {meeting.duration} min</div>
-                          {meeting.location && <div className="flex items-center gap-1.5"><MapPin size={14} />{meeting.location}</div>}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => toggleStatus(meeting.id)} title={meeting.status === 'completed' ? "Reabrir" : "Finalizar"} className={`p-2 rounded-full transition-colors ${meeting.status === 'completed' ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-slate-400 hover:text-green-600 hover:bg-green-50'}`}>
-                          {meeting.status === 'completed' ? <CheckCircle2 size={20} /> : <Circle size={20} />}
-                        </button>
-                        <div className="relative group/menu">
-                           <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"><MoreVertical size={20} /></button>
-                           <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-slate-200 rounded-lg shadow-lg opacity-0 group-hover/menu:opacity-100 invisible group-hover/menu:visible transition-all z-20 flex flex-col p-1">
-                             <button onClick={() => handleOpenModal(meeting)} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-md text-left"><Edit2 size={14} /> Editar</button>
-                             <button onClick={() => deleteMeeting(meeting.id)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md text-left"><Trash2 size={14} /> Excluir</button>
-                           </div>
-                        </div>
-                      </div>
-                    </div>
-                    {meeting.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {meeting.tags.map(tag => (
-                          <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 text-xs font-medium text-slate-600 border border-slate-200"><Tag size={10} /> {tag}</span>
-                        ))}
-                      </div>
-                    )}
-                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pauta / Descrição</h4>
-                      <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto custom-scrollbar">
-                        {meeting.description || <span className="text-slate-400 italic">Sem descrição definida.</span>}
-                      </div>
-                    </div>
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth">
+          <div className="max-w-7xl mx-auto space-y-8">
+            
+            {/* NEXT MEETING HERO SECTION */}
+            {filter.status !== 'completed' && !filter.search && (
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-xl">
+                {/* Decorative Background Elements */}
+                <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-black/10 blur-3xl"></div>
+                
+                <div className="relative z-10 p-6 md:p-8">
+                  <div className="flex items-center gap-2 mb-4 text-indigo-100">
+                    <Timer size={20} className="animate-pulse" />
+                    <span className="text-sm font-semibold uppercase tracking-wider">Próximo Compromisso</span>
                   </div>
-                  <div className={`absolute left-0 top-4 bottom-4 w-1 rounded-r-full transition-colors ${meeting.status === 'completed' ? 'bg-green-400' : 'bg-indigo-500'}`}></div>
+
+                  {nextMeeting ? (
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                      <div className="space-y-4 flex-1">
+                        <h1 className="text-3xl md:text-4xl font-bold leading-tight">{nextMeeting.title}</h1>
+                        <div className="flex flex-wrap items-center gap-6 text-indigo-100">
+                          <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                            <Calendar size={18} />
+                            <span className="font-medium">{new Date(nextMeeting.date).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                          </div>
+                          <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                            <Clock size={18} />
+                            <span className="font-medium text-lg">{nextMeeting.time}</span>
+                          </div>
+                          {nextMeeting.location && (
+                            <div className="flex items-center gap-2">
+                              <MapPin size={18} />
+                              <span>{nextMeeting.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 min-w-[140px]">
+                         <Button variant="white" onClick={() => handleOpenModal(nextMeeting)}>
+                            Ver Detalhes
+                         </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-4 text-center md:text-left">
+                      <h3 className="text-2xl font-bold text-white mb-2">Tudo limpo por enquanto!</h3>
+                      <p className="text-indigo-100">Você não tem reuniões agendadas para o futuro próximo. Aproveite para organizar suas tarefas.</p>
+                      <Button variant="white" onClick={() => handleOpenModal()} className="mt-4">
+                        Agendar Agora
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* LIST OF MEETINGS */}
+            <div>
+               {filteredMeetings.length > 0 && (
+                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                     <CalendarClock size={16} />
+                     Linha do Tempo
+                  </h3>
+               )}
+
+               {filteredMeetings.length === 0 ? (
+                 <div className="h-64 flex flex-col items-center justify-center text-slate-400 bg-white rounded-2xl border border-slate-200 border-dashed">
+                   <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                     <Calendar size={32} className="text-slate-300" />
+                   </div>
+                   <p className="text-lg font-medium text-slate-600">Nenhuma reunião encontrada</p>
+                   <p className="text-sm">Ajuste os filtros ou crie um novo evento.</p>
+                 </div>
+               ) : (
+                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                   {filteredMeetings.map(meeting => (
+                     <div key={meeting.id} className={`group relative bg-white rounded-xl border transition-all duration-300 hover:-translate-y-1 ${meeting.status === 'completed' ? 'border-slate-200 bg-slate-50/50 opacity-75' : 'border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-300'}`}>
+                       <div className="p-5">
+                         <div className="flex items-start justify-between mb-4">
+                           <div className="flex-1">
+                             <div className="flex items-center gap-2 mb-1">
+                                <h3 className={`font-bold text-lg leading-tight ${meeting.status === 'completed' ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{meeting.title}</h3>
+                                {meeting.status === 'completed' && <Badge color="bg-green-100 text-green-700">Finalizada</Badge>}
+                             </div>
+                             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mt-3">
+                               <div className={`flex items-center gap-1.5 font-medium ${meeting.status !== 'completed' ? 'text-indigo-600' : ''}`}>
+                                 <Calendar size={14} />
+                                 {new Date(meeting.date).toLocaleDateString('pt-BR')}
+                               </div>
+                               <div className="flex items-center gap-1.5">
+                                 <Clock size={14} />
+                                 {meeting.time}
+                               </div>
+                               <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded text-xs">
+                                 <Timer size={12} />
+                                 {meeting.duration} min
+                               </div>
+                             </div>
+                             {meeting.location && <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-2"><MapPin size={14} />{meeting.location}</div>}
+                           </div>
+                           
+                           {/* Actions */}
+                           <div className="flex items-center gap-1">
+                             <button onClick={() => toggleStatus(meeting.id)} title={meeting.status === 'completed' ? "Reabrir" : "Finalizar"} className={`p-2 rounded-full transition-colors ${meeting.status === 'completed' ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-slate-300 hover:text-green-600 hover:bg-green-50'}`}>
+                               {meeting.status === 'completed' ? <CheckCircle2 size={22} /> : <Circle size={22} />}
+                             </button>
+                             <div className="relative group/menu">
+                                <button className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"><MoreVertical size={20} /></button>
+                                <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-slate-200 rounded-lg shadow-lg opacity-0 group-hover/menu:opacity-100 invisible group-hover/menu:visible transition-all z-20 flex flex-col p-1">
+                                  <button onClick={() => handleOpenModal(meeting)} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-md text-left"><Edit2 size={14} /> Editar</button>
+                                  <button onClick={() => deleteMeeting(meeting.id)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md text-left"><Trash2 size={14} /> Excluir</button>
+                                </div>
+                             </div>
+                           </div>
+                         </div>
+                         
+                         {meeting.tags.length > 0 && (
+                           <div className="flex flex-wrap gap-2 mb-4 pt-2 border-t border-slate-50">
+                             {meeting.tags.map(tag => (
+                               <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-xs font-semibold text-slate-600 border border-slate-200"><Tag size={10} /> {tag}</span>
+                             ))}
+                           </div>
+                         )}
+                         <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 group-hover:border-indigo-100 transition-colors">
+                           <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Sparkles size={10} /> Pauta</h4>
+                           <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto custom-scrollbar">
+                             {meeting.description || <span className="text-slate-400 italic">Sem descrição definida.</span>}
+                           </div>
+                         </div>
+                       </div>
+                       {/* Left colored border based on status */}
+                       <div className={`absolute left-0 top-4 bottom-4 w-1 rounded-r-full transition-colors ${meeting.status === 'completed' ? 'bg-green-400' : 'bg-indigo-500'}`}></div>
+                     </div>
+                   ))}
+                 </div>
+               )}
             </div>
-          )}
+          </div>
         </div>
       </main>
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-800">{editingId ? 'Editar Reunião' : 'Nova Reunião'}</h2>
-              <button onClick={handleCloseModal} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={24} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] scale-100 animate-[fadeIn_0.2s_ease-out]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                 <div className={`w-2 h-8 rounded-full ${editingId ? 'bg-indigo-500' : 'bg-green-500'}`}></div>
+                 <h2 className="text-xl font-bold text-slate-800">{editingId ? 'Editar Reunião' : 'Nova Reunião'}</h2>
+              </div>
+              <button onClick={handleCloseModal} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 p-1 rounded-full hover:bg-slate-200"><X size={20} /></button>
             </div>
             <form onSubmit={handleSaveMeeting} className="flex-1 overflow-y-auto p-6">
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Título</label>
-                  <input required type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Planejamento de Vendas" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Título da Reunião</label>
+                  <input required type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Planejamento de Vendas Q3" className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-medium text-lg" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div><label className="block text-sm font-medium text-slate-700 mb-1">Data</label><input required type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none" /></div>
-                  <div><label className="block text-sm font-medium text-slate-700 mb-1">Horário</label><input required type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none" /></div>
-                  <div><label className="block text-sm font-medium text-slate-700 mb-1">Duração (min)</label><input type="number" min="15" step="15" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })} className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none" /></div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div><label className="block text-sm font-bold text-slate-700 mb-1">Data</label><input required type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none" /></div>
+                  <div><label className="block text-sm font-bold text-slate-700 mb-1">Horário</label><input required type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none" /></div>
+                  <div><label className="block text-sm font-bold text-slate-700 mb-1">Duração (min)</label><input type="number" min="15" step="15" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none" /></div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Local / Link</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Local / Link</label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Sala 304 ou Link do Meet..." className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Sala de Reuniões 1 ou Link do Google Meet" className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
                   </div>
                 </div>
                 <div>
-                   <div className="flex items-center justify-between mb-1">
-                      <label className="block text-sm font-medium text-slate-700">Pauta</label>
-                      <button type="button" onClick={handleGenerateAgenda} disabled={isGenerating} className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"><Sparkles size={12} /> {isGenerating ? 'Gerando com IA...' : 'Gerar Pauta com IA'}</button>
+                   <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-bold text-slate-700">Pauta da Reunião</label>
+                      <button type="button" onClick={handleGenerateAgenda} disabled={isGenerating} className="text-xs flex items-center gap-1.5 text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md hover:bg-indigo-100 font-bold disabled:opacity-50 transition-colors"><Sparkles size={14} /> {isGenerating ? 'Criando mágica...' : 'Gerar com IA'}</button>
                    </div>
-                   <textarea rows={5} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} disabled={isGenerating} placeholder="Tópicos da reunião..." className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-mono text-sm disabled:opacity-70" />
+                   <textarea rows={5} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} disabled={isGenerating} placeholder="- Tópico 1&#10;- Tópico 2&#10;- Definições finais" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-mono text-sm leading-relaxed disabled:opacity-70" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Etiquetas</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Etiquetas</label>
                   <div className="flex flex-wrap gap-2">
                     {AVAILABLE_TAGS.map(tag => (
-                      <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${formData.tags.includes(tag) ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>{tag}</button>
+                      <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${formData.tags.includes(tag) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'}`}>{tag}</button>
                     ))}
                   </div>
                 </div>
@@ -452,7 +556,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
             </form>
             <div className="p-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50">
               <Button type="button" variant="ghost" onClick={handleCloseModal}>Cancelar</Button>
-              <Button onClick={handleSaveMeeting}>{editingId ? 'Salvar' : 'Agendar'}</Button>
+              <Button onClick={handleSaveMeeting} className="pl-3 pr-5"><CheckCircle2 size={18} className="mr-2" /> {editingId ? 'Salvar Alterações' : 'Agendar Agora'}</Button>
             </div>
           </div>
         </div>
