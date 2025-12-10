@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Calendar, 
   Clock, 
@@ -20,7 +20,11 @@ import {
   User,
   Timer,
   ArrowRight,
-  CalendarClock
+  CalendarClock,
+  Download,
+  Upload,
+  CloudCheck,
+  Save
 } from 'lucide-react';
 import { generateAgenda } from './services/geminiService';
 import { Meeting, MeetingFormData, FilterState } from './types';
@@ -169,6 +173,7 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
 // 2. Dashboard Component (Authenticated View)
 const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onLogout }) => {
   const storageKey = `cronos_meetings_${user}`;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [meetings, setMeetings] = useState<Meeting[]>(() => {
     try {
@@ -183,15 +188,20 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
   const [filter, setFilter] = useState<FilterState>({ status: 'all', search: '' });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<MeetingFormData>(INITIAL_FORM_STATE);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Persistence with visual feedback
   useEffect(() => {
+    setIsSaving(true);
     localStorage.setItem(storageKey, JSON.stringify(meetings));
+    // Simulate network save delay for visual reassurance
+    const timer = setTimeout(() => setIsSaving(false), 800);
+    return () => clearTimeout(timer);
   }, [meetings, storageKey]);
 
   // --- Sorting & Filtering Logic ---
-  
   const filteredMeetings = useMemo(() => {
     return meetings
       .filter(m => {
@@ -210,21 +220,65 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
 
   const nextMeeting = useMemo(() => {
     const now = new Date();
-    // Filter only scheduled meetings
     const scheduled = meetings.filter(m => m.status === 'scheduled');
-    
-    // Sort chronologically
     scheduled.sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
-
-    // Find the first meeting that is in the future
     const upcoming = scheduled.find(m => new Date(`${m.date}T${m.time}`) > now);
-    
-    // If no future meeting found but there are scheduled ones (e.g. today earlier), take the last one added or handle as needed. 
-    // Here we prefer strictly future, otherwise null.
     return upcoming || null;
   }, [meetings]);
 
   // --- Handlers ---
+
+  const handleExport = () => {
+    const dataStr = JSON.stringify(meetings, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `cronos_backup_${user}_${getTodayString()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm('ATENÇÃO: Isso irá substituir todas as reuniões atuais pelos dados do arquivo. Deseja continuar?')) {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const result = e.target?.result as string;
+        const imported = JSON.parse(result);
+        
+        if (Array.isArray(imported)) {
+          // Validate structure loosely
+          const isValid = imported.every(m => m.id && m.title && m.date);
+          if (isValid) {
+            setMeetings(imported);
+            alert('Dados restaurados com sucesso!');
+          } else {
+            alert('Arquivo inválido: Formato de dados incorreto.');
+          }
+        } else {
+          alert('Arquivo inválido: Não contém uma lista de reuniões.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao ler o arquivo. Verifique se é um backup válido.');
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
 
   const handleOpenModal = (meeting?: Meeting) => {
     if (meeting) {
@@ -311,7 +365,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
           <h1 className="text-xl font-bold tracking-tight text-slate-800">Cronos</h1>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-4 flex flex-col overflow-y-auto">
           {/* User Info */}
           <div className="mb-6 flex items-center gap-3 px-3 py-3 bg-gradient-to-r from-slate-50 to-white rounded-lg border border-slate-200">
             <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 ring-2 ring-white shadow-sm">
@@ -323,47 +377,79 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
             </div>
           </div>
 
-          <button onClick={() => setFilter({ ...filter, status: 'all' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'all' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-            <LayoutDashboard size={18} /> Visão Geral
-            <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.total}</span>
-          </button>
-          
-          <button onClick={() => setFilter({ ...filter, status: 'scheduled' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'scheduled' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-            <Calendar size={18} /> Agendadas
-            <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.scheduled}</span>
-          </button>
-          
-          <button onClick={() => setFilter({ ...filter, status: 'completed' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'completed' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-            <CheckCircle2 size={18} /> Finalizadas
-            <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.completed}</span>
-          </button>
-        </nav>
+          <div className="space-y-1">
+            <button onClick={() => setFilter({ ...filter, status: 'all' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'all' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+              <LayoutDashboard size={18} /> Visão Geral
+              <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.total}</span>
+            </button>
+            
+            <button onClick={() => setFilter({ ...filter, status: 'scheduled' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'scheduled' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+              <Calendar size={18} /> Agendadas
+              <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.scheduled}</span>
+            </button>
+            
+            <button onClick={() => setFilter({ ...filter, status: 'completed' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'completed' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+              <CheckCircle2 size={18} /> Finalizadas
+              <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.completed}</span>
+            </button>
+          </div>
 
-        <div className="p-4 border-t border-slate-100 space-y-2">
-           <Button onClick={() => handleOpenModal()} className="w-full gap-2 shadow-lg shadow-indigo-200 hover:shadow-indigo-300">
-             <Plus size={18} /> Nova Reunião
-           </Button>
-           <button onClick={onLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-             <LogOut size={16} /> Sair
-           </button>
-        </div>
+          <div className="mt-auto pt-6 border-t border-slate-100">
+             <h3 className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Dados & Backup</h3>
+             
+             <div className="space-y-1 mb-4">
+                <button onClick={handleExport} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
+                  <Download size={18} /> Fazer Backup (Salvar)
+                </button>
+                <button onClick={handleImportClick} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
+                  <Upload size={18} /> Restaurar Dados
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleImport} 
+                  className="hidden" 
+                  accept=".json"
+                />
+             </div>
+             
+             <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors">
+               <LogOut size={18} /> Sair do Sistema
+             </button>
+          </div>
+        </nav>
       </aside>
 
       {/* Main Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 md:px-8 flex-shrink-0 z-20">
-          <h2 className="text-lg font-semibold text-slate-800">
-            {filter.status === 'all' ? 'Visão Geral' : filter.status === 'scheduled' ? 'Próximos Compromissos' : 'Histórico de Reuniões'}
-          </h2>
-          <div className="relative w-64 md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Buscar reunião..." 
-              value={filter.search}
-              onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
-            />
+          <div className="flex flex-col">
+            <h2 className="text-lg font-semibold text-slate-800 leading-tight">
+              {filter.status === 'all' ? 'Visão Geral' : filter.status === 'scheduled' ? 'Próximos Compromissos' : 'Histórico de Reuniões'}
+            </h2>
+            <div className="flex items-center gap-1.5 text-xs font-medium mt-0.5">
+               {isSaving ? (
+                 <span className="flex items-center gap-1 text-indigo-500 animate-pulse"><Save size={12} /> Salvando...</span>
+               ) : (
+                 <span className="flex items-center gap-1 text-green-600"><CloudCheck size={12} /> Dados salvos e seguros</span>
+               )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="relative w-48 md:w-80 hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="Buscar reunião..." 
+                value={filter.search}
+                onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
+              />
+            </div>
+            <Button onClick={() => handleOpenModal()} className="shadow-lg shadow-indigo-200 hover:shadow-indigo-300 gap-2 px-3 md:px-4">
+               <Plus size={18} /> <span className="hidden md:inline">Nova Reunião</span>
+            </Button>
           </div>
         </header>
 
@@ -412,8 +498,8 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                     </div>
                   ) : (
                     <div className="py-4 text-center md:text-left">
-                      <h3 className="text-2xl font-bold text-white mb-2">Tudo limpo por enquanto!</h3>
-                      <p className="text-indigo-100">Você não tem reuniões agendadas para o futuro próximo. Aproveite para organizar suas tarefas.</p>
+                      <h3 className="text-2xl font-bold text-white mb-2">Agenda Livre!</h3>
+                      <p className="text-indigo-100">Você não tem reuniões agendadas para o futuro próximo. Aproveite para organizar suas tarefas ou criar novos planos.</p>
                       <Button variant="white" onClick={() => handleOpenModal()} className="mt-4">
                         Agendar Agora
                       </Button>
