@@ -19,7 +19,24 @@ import {
 import { generateAgenda } from './services/geminiService';
 import { Meeting, MeetingFormData, FilterState } from './types';
 
-// --- Utility Components ---
+// --- Utility Functions & Components ---
+
+// Safe ID generation that works in non-secure contexts too
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
+// Get today's date in local time YYYY-MM-DD format
+const getTodayString = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' }> = ({ 
   children, variant = 'primary', className = '', ...props 
@@ -52,7 +69,7 @@ const availableTags = ["Estratégia", "Vendas", "Equipe", "Produto", "Design", "
 
 const initialFormState: MeetingFormData = {
   title: '',
-  date: new Date().toISOString().split('T')[0],
+  date: getTodayString(),
   time: '10:00',
   duration: 60,
   description: '',
@@ -62,8 +79,13 @@ const initialFormState: MeetingFormData = {
 
 export default function App() {
   const [meetings, setMeetings] = useState<Meeting[]>(() => {
-    const saved = localStorage.getItem('cronos_meetings');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('cronos_meetings');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Erro ao carregar reuniões:", e);
+      return [];
+    }
   });
 
   const [filter, setFilter] = useState<FilterState>({ status: 'all', search: '' });
@@ -101,7 +123,7 @@ export default function App() {
       });
       setEditingId(meeting.id);
     } else {
-      setFormData(initialFormState);
+      setFormData({ ...initialFormState, date: getTodayString() });
       setEditingId(null);
     }
     setIsModalOpen(true);
@@ -121,7 +143,7 @@ export default function App() {
     } else {
       const newMeeting: Meeting = {
         ...formData,
-        id: crypto.randomUUID(),
+        id: generateId(),
         status: 'scheduled'
       };
       setMeetings(prev => [...prev, newMeeting]);
@@ -443,8 +465,9 @@ export default function App() {
                      rows={5}
                      value={formData.description}
                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                     disabled={isGenerating}
                      placeholder="Liste os tópicos que serão discutidos..."
-                     className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all outline-none resize-none font-mono text-sm"
+                     className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all outline-none resize-none font-mono text-sm disabled:opacity-70 disabled:bg-slate-50"
                    />
                 </div>
 
