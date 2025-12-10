@@ -21,12 +21,18 @@ export const generateAgenda = async (title: string, duration: number): Promise<s
 
   try {
     const prompt = `
-      Atue como uma assistente clínica. Crie uma pauta/resumo estruturado para um agendamento clínico com o título: "${title}".
-      A duração é de ${duration} minutos.
+      Atue como uma especialista em vendas consultivas do suplemento natural CandiSTOP (focado em saúde íntima e bem-estar).
+      Crie um roteiro de abordagem de vendas ou follow-up para uma cliente/lead identificada como: "${title}".
+      O tempo disponível para a conversa é de ${duration} minutos.
       
       Retorne APENAS o conteúdo em tópicos breves (Markdown).
-      Foque em: Anamnese, Procedimento/Exame e Orientações Finais.
-      Seja cordial e profissional. Use português do Brasil.
+      Estruture a resposta em:
+      1. Quebra-gelo & Conexão (Rapport)
+      2. Sondagem de Dores (Identificar necessidades sem parecer médica, foco em desconforto e qualidade de vida)
+      3. Apresentação do CandiSTOP (Benefícios do encapsulado, naturalidade, resultados)
+      4. Oferta Irresistível & Fechamento (Gatilhos de escassez/urgência)
+      
+      Seja empática, persuasiva, vendedora e profissional. Use português do Brasil.
     `;
 
     const response = await client.models.generateContent({
@@ -34,9 +40,9 @@ export const generateAgenda = async (title: string, duration: number): Promise<s
       contents: prompt,
     });
 
-    return response.text || "Não foi possível gerar a sugestão.";
+    return response.text || "Não foi possível gerar o roteiro de vendas.";
   } catch (error) {
     console.error("Error generating agenda:", error);
-    return "Erro de conexão com a IA. Por favor, preencha manualmente.";
+    return "Erro de conexão com a IA. Por favor, crie o roteiro manualmente.";
   }
 };

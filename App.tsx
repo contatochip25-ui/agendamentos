@@ -24,7 +24,10 @@ import {
   CloudCheck,
   Save,
   Leaf,
-  Menu // Added Menu icon for mobile toggle
+  Menu,
+  Phone,
+  MessageCircle,
+  DollarSign
 } from 'lucide-react';
 import { generateAgenda } from './services/geminiService';
 import { Meeting, MeetingFormData, FilterState } from './types';
@@ -100,15 +103,26 @@ const BrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg', light?: boolean }> = ({ s
 };
 
 // --- Constants ---
-const AVAILABLE_TAGS = ["Consulta", "Retorno", "Exame", "Urgência", "Terapia", "Procedimento", "Estética", "Outros"];
+// Sales funnel tags
+const AVAILABLE_TAGS = [
+  "Interessada", 
+  "Primeiro Contato", 
+  "Follow-up", 
+  "Venda Realizada", 
+  "Aguardando Pagamento", 
+  "Dúvidas", 
+  "Retorno", 
+  "Perdido"
+];
+
 const INITIAL_FORM_STATE: MeetingFormData = {
   title: '',
   date: getTodayString(),
   time: '10:00',
-  duration: 60,
+  duration: 30, // Default duration for sales call
   description: '',
   tags: [],
-  location: ''
+  location: '' // Now represents "Channel"
 };
 
 // --- Sub-Components ---
@@ -142,7 +156,7 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
         </div>
         
         <div className="p-8 bg-white">
-          <h2 className="text-xl font-bold text-slate-800 mb-6 text-center">Acesso ao Sistema</h2>
+          <h2 className="text-xl font-bold text-slate-800 mb-6 text-center">Acesso à Gestão de Vendas</h2>
           
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
@@ -183,7 +197,7 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
               type="submit"
               className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white py-3.5 rounded-xl font-bold hover:opacity-90 focus:ring-4 focus:ring-pink-500/30 transition-all shadow-lg shadow-pink-200/50 mt-4 flex items-center justify-center gap-2 active:scale-[0.98]"
             >
-              Entrar <ArrowRight size={18} />
+              Acessar Painel <ArrowRight size={18} />
             </button>
           </form>
           
@@ -198,7 +212,7 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
 
 // 2. Dashboard Component (Authenticated View)
 const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onLogout }) => {
-  const storageKey = `candistop_meetings_${user}`;
+  const storageKey = `candistop_sales_meetings_${user}`; // Updated storage key
   
   // Mobile Sidebar State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -329,7 +343,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
 
   const handleGenerateAgenda = async () => {
     if (!formData.title) {
-      alert("Por favor, insira um título/paciente antes de gerar.");
+      alert("Por favor, insira o nome da cliente antes de gerar o roteiro.");
       return;
     }
     setIsGenerating(true);
@@ -381,13 +395,13 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                <User size={20} />
             </div>
             <div className="overflow-hidden">
-              <p className="text-[10px] text-pink-200 font-bold uppercase tracking-wider">Logado como</p>
+              <p className="text-[10px] text-pink-200 font-bold uppercase tracking-wider">Vendedor(a)</p>
               <p className="text-sm font-bold text-white truncate" title={user}>{user}</p>
             </div>
           </div>
 
           <button onClick={() => { setFilter({ ...filter, status: 'all' }); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${filter.status === 'all' ? 'bg-pink-600 text-white shadow-lg shadow-pink-900/20' : 'text-purple-200 hover:bg-white/5 hover:text-white'}`}>
-            <LayoutDashboard size={18} /> Visão Geral
+            <LayoutDashboard size={18} /> Painel de Vendas
             <span className={`ml-auto py-0.5 px-2 rounded-full text-xs font-bold ${filter.status === 'all' ? 'bg-white/20 text-white' : 'bg-white/5 text-purple-300'}`}>{stats.total}</span>
           </button>
           
@@ -397,7 +411,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
           </button>
           
           <button onClick={() => { setFilter({ ...filter, status: 'completed' }); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${filter.status === 'completed' ? 'bg-pink-600 text-white shadow-lg shadow-pink-900/20' : 'text-purple-200 hover:bg-white/5 hover:text-white'}`}>
-            <CheckCircle2 size={18} /> Finalizados
+            <CheckCircle2 size={18} /> Finalizados/Vendidos
             <span className={`ml-auto py-0.5 px-2 rounded-full text-xs font-bold ${filter.status === 'completed' ? 'bg-white/20 text-white' : 'bg-white/5 text-purple-300'}`}>{stats.completed}</span>
           </button>
 
@@ -426,7 +440,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
 
             <div className="flex flex-col">
               <h2 className="text-lg md:text-xl font-bold text-slate-800 leading-tight">
-                {filter.status === 'all' ? 'Visão Geral' : filter.status === 'scheduled' ? 'Próximos Agendamentos' : 'Histórico'}
+                {filter.status === 'all' ? 'Visão Geral' : filter.status === 'scheduled' ? 'Próximas Reuniões' : 'Histórico de Vendas'}
               </h2>
               <div className="flex items-center gap-1.5 text-xs font-medium mt-0.5">
                  {isSaving ? (
@@ -443,14 +457,14 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-300 group-focus-within:text-pink-500 transition-colors" size={18} />
               <input 
                 type="text" 
-                placeholder="Buscar paciente..." 
+                placeholder="Buscar cliente..." 
                 value={filter.search}
                 onChange={(e) => setFilter({ ...filter, search: e.target.value })}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-pink-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all shadow-sm placeholder-pink-200"
               />
             </div>
             <Button onClick={() => handleOpenModal()} className="shadow-lg shadow-pink-200 hover:shadow-pink-300 gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl font-bold bg-pink-600 hover:bg-pink-700 whitespace-nowrap">
-               <Plus size={20} /> <span className="hidden md:inline">Novo</span>
+               <Plus size={20} /> <span className="hidden md:inline">Nova Cliente</span>
             </Button>
           </div>
         </header>
@@ -461,7 +475,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-300" size={16} />
               <input 
                 type="text" 
-                placeholder="Buscar paciente..." 
+                placeholder="Buscar cliente..." 
                 value={filter.search}
                 onChange={(e) => setFilter({ ...filter, search: e.target.value })}
                 className="w-full pl-9 pr-4 py-2 bg-white border border-pink-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 placeholder-pink-200"
@@ -484,7 +498,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                     <div className="bg-pink-500/20 p-1.5 rounded-lg animate-pulse">
                       <Timer size={20} className="text-pink-300" />
                     </div>
-                    <span className="text-sm font-bold uppercase tracking-widest">Próximo Compromisso</span>
+                    <span className="text-sm font-bold uppercase tracking-widest">Próxima Reunião</span>
                   </div>
 
                   {nextMeeting ? (
@@ -502,7 +516,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                           </div>
                           {nextMeeting.location && (
                             <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl backdrop-blur-md border border-white/5 max-w-full">
-                              <MapPin size={18} className="text-pink-300 shrink-0" />
+                              <Phone size={18} className="text-pink-300 shrink-0" />
                               <span className="truncate">{nextMeeting.location}</span>
                             </div>
                           )}
@@ -516,10 +530,10 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                     </div>
                   ) : (
                     <div className="py-6 text-center md:text-left">
-                      <h3 className="text-3xl font-bold text-white mb-2 font-script">Agenda Livre!</h3>
-                      <p className="text-pink-200 max-w-lg">Você não tem agendamentos para o futuro próximo. Aproveite para organizar seus prontuários ou descansar.</p>
+                      <h3 className="text-3xl font-bold text-white mb-2 font-script">Sem atendimentos!</h3>
+                      <p className="text-pink-200 max-w-lg">Você não tem reuniões de venda agendadas. Aproveite para prospectar novos clientes.</p>
                       <Button variant="white" onClick={() => handleOpenModal()} className="mt-6 bg-pink-600 border-none hover:bg-pink-500">
-                        Novo Agendamento
+                        Nova Cliente
                       </Button>
                     </div>
                   )}
@@ -532,7 +546,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                {filteredMeetings.length > 0 && (
                   <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
                      <CalendarClock size={16} />
-                     Linha do Tempo
+                     Agenda de Vendas
                   </h3>
                )}
 
@@ -542,7 +556,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                      <Calendar size={40} className="text-pink-300" />
                    </div>
                    <p className="text-xl font-bold text-slate-600">Nenhum agendamento encontrado</p>
-                   <p className="text-sm text-pink-300 mt-2">Ajuste os filtros ou crie um novo evento.</p>
+                   <p className="text-sm text-pink-300 mt-2">Cadastre uma nova cliente para iniciar.</p>
                  </div>
                ) : (
                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -553,7 +567,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                            <div className="flex-1 min-w-0 pr-4">
                              <div className="flex items-center gap-3 mb-2 flex-wrap">
                                 <h3 className={`font-bold text-xl leading-tight truncate w-full md:w-auto ${meeting.status === 'completed' ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{meeting.title}</h3>
-                                {meeting.status === 'completed' && <Badge color="bg-emerald-100 text-emerald-700">Finalizada</Badge>}
+                                {meeting.status === 'completed' && <Badge color="bg-emerald-100 text-emerald-700">Concluído</Badge>}
                              </div>
                              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mt-3">
                                <div className={`flex items-center gap-1.5 font-bold ${meeting.status !== 'completed' ? 'text-pink-600' : ''}`}>
@@ -569,12 +583,12 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                                  {meeting.duration} min
                                </div>
                              </div>
-                             {meeting.location && <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-3 truncate"><MapPin size={16} className="text-pink-400 shrink-0" />{meeting.location}</div>}
+                             {meeting.location && <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-3 truncate"><Phone size={16} className="text-pink-400 shrink-0" />{meeting.location}</div>}
                            </div>
                            
                            {/* Actions */}
                            <div className="flex items-center gap-2 shrink-0">
-                             <button onClick={() => toggleStatus(meeting.id)} title={meeting.status === 'completed' ? "Reabrir" : "Finalizar"} className={`p-2 rounded-full transition-all ${meeting.status === 'completed' ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' : 'text-slate-300 hover:text-emerald-600 hover:bg-emerald-50'}`}>
+                             <button onClick={() => toggleStatus(meeting.id)} title={meeting.status === 'completed' ? "Reabrir" : "Finalizar/Vendido"} className={`p-2 rounded-full transition-all ${meeting.status === 'completed' ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' : 'text-slate-300 hover:text-emerald-600 hover:bg-emerald-50'}`}>
                                {meeting.status === 'completed' ? <CheckCircle2 size={24} /> : <Circle size={24} />}
                              </button>
                              <div className="relative group/menu">
@@ -595,9 +609,9 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                            </div>
                          )}
                          <div className="bg-pink-50/50 rounded-xl p-4 border border-pink-100/50 group-hover:border-pink-200 transition-colors">
-                           <h4 className="text-[10px] font-bold text-pink-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Sparkles size={12} /> Detalhes</h4>
+                           <h4 className="text-[10px] font-bold text-pink-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Sparkles size={12} /> Roteiro de Vendas / Notas</h4>
                            <div className="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed max-h-24 overflow-y-auto custom-scrollbar">
-                             {meeting.description || <span className="text-slate-400 italic">Sem observações.</span>}
+                             {meeting.description || <span className="text-slate-400 italic">Sem anotações.</span>}
                            </div>
                          </div>
                        </div>
@@ -619,15 +633,15 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
             <div className="flex items-center justify-between px-6 md:px-8 py-5 border-b border-slate-100 bg-gradient-to-r from-pink-50 to-white">
               <div className="flex items-center gap-3">
                  <div className={`w-3 h-3 rounded-full shadow-sm ring-4 ring-white ${editingId ? 'bg-pink-500' : 'bg-emerald-500'}`}></div>
-                 <h2 className="text-lg md:text-xl font-bold text-slate-800">{editingId ? 'Editar Agendamento' : 'Novo Agendamento'}</h2>
+                 <h2 className="text-lg md:text-xl font-bold text-slate-800">{editingId ? 'Editar Cliente' : 'Nova Cliente'}</h2>
               </div>
               <button onClick={handleCloseModal} className="text-slate-400 hover:text-pink-600 transition-colors bg-white p-2 rounded-full hover:bg-pink-50 shadow-sm border border-slate-100"><X size={20} /></button>
             </div>
             <form onSubmit={handleSaveMeeting} className="flex-1 overflow-y-auto p-6 md:p-8">
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Título / Paciente <span className="text-red-500">*</span></label>
-                  <input required type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Consulta Dra. Ana - Maria Silva" className="w-full px-5 py-3.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-all font-medium text-lg placeholder-slate-400" />
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Nome da Cliente / Lead <span className="text-red-500">*</span></label>
+                  <input required type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Maria Silva - Interessada via Instagram" className="w-full px-5 py-3.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-all font-medium text-lg placeholder-slate-400" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div><label className="block text-sm font-bold text-slate-700 mb-2">Data <span className="text-red-500">*</span></label><input required type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none bg-white" /></div>
@@ -635,21 +649,21 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
                   <div><label className="block text-sm font-bold text-slate-700 mb-2">Duração (min)</label><input type="number" min="15" step="15" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none bg-white" /></div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Local / Sala</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Canal de Atendimento</label>
                   <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Consultório 1" className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none" />
+                    <MessageCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="WhatsApp, Ligação, Zoom..." className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none" />
                   </div>
                 </div>
                 <div>
                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-bold text-slate-700">Observações / Pauta</label>
-                      <button type="button" onClick={handleGenerateAgenda} disabled={isGenerating} className="text-xs flex items-center gap-1.5 text-pink-600 bg-pink-50 px-3 py-1.5 rounded-lg hover:bg-pink-100 font-bold disabled:opacity-50 transition-colors"><Sparkles size={14} /> {isGenerating ? 'Gerando com IA...' : 'Sugestão IA'}</button>
+                      <label className="block text-sm font-bold text-slate-700">Roteiro / Notas de Venda</label>
+                      <button type="button" onClick={handleGenerateAgenda} disabled={isGenerating} className="text-xs flex items-center gap-1.5 text-pink-600 bg-pink-50 px-3 py-1.5 rounded-lg hover:bg-pink-100 font-bold disabled:opacity-50 transition-colors"><Sparkles size={14} /> {isGenerating ? 'Criando Roteiro de Vendas...' : 'Gerar Roteiro IA'}</button>
                    </div>
-                   <textarea rows={5} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} disabled={isGenerating} placeholder="Detalhes do procedimento, histórico breve, etc." className="w-full px-5 py-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none resize-none font-sans text-sm leading-relaxed disabled:opacity-70" />
+                   <textarea rows={5} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} disabled={isGenerating} placeholder="Objeções da cliente, produtos de interesse, etc." className="w-full px-5 py-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none resize-none font-sans text-sm leading-relaxed disabled:opacity-70" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-3">Etiquetas</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-3">Status do Funil</label>
                   <div className="flex flex-wrap gap-2">
                     {AVAILABLE_TAGS.map(tag => (
                       <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${formData.tags.includes(tag) ? 'bg-pink-600 text-white border-pink-600 shadow-lg shadow-pink-200' : 'bg-white text-slate-500 border-slate-200 hover:border-pink-300 hover:text-pink-600'}`}>{tag}</button>
@@ -660,7 +674,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
             </form>
             <div className="p-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50">
               <Button type="button" variant="ghost" onClick={handleCloseModal}>Cancelar</Button>
-              <Button onClick={handleSaveMeeting} className="pl-4 pr-6 py-3 bg-pink-600 hover:bg-pink-700 shadow-lg shadow-pink-200"><CheckCircle2 size={18} className="mr-2" /> {editingId ? 'Salvar Alterações' : 'Confirmar Agendamento'}</Button>
+              <Button onClick={handleSaveMeeting} className="pl-4 pr-6 py-3 bg-pink-600 hover:bg-pink-700 shadow-lg shadow-pink-200"><CheckCircle2 size={18} className="mr-2" /> {editingId ? 'Salvar' : 'Agendar Contato'}</Button>
             </div>
           </div>
         </div>
