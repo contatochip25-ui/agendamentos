@@ -22,7 +22,9 @@ import {
   ArrowRight,
   CalendarClock,
   CloudCheck,
-  Save
+  Save,
+  Leaf,
+  Menu // Added Menu icon for mobile toggle
 } from 'lucide-react';
 import { generateAgenda } from './services/geminiService';
 import { Meeting, MeetingFormData, FilterState } from './types';
@@ -49,12 +51,12 @@ const getTodayString = () => {
 const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'white' }> = ({ 
   children, variant = 'primary', className = '', ...props 
 }) => {
-  const baseStyles = "inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyles = "inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none";
   
   const variants = {
-    primary: "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500 shadow-sm hover:shadow",
-    secondary: "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-indigo-500 shadow-sm",
-    ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+    primary: "bg-pink-600 text-white hover:bg-pink-700 focus:ring-pink-500 shadow-sm hover:shadow-md shadow-pink-200 active:scale-95",
+    secondary: "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-pink-500 shadow-sm",
+    ghost: "text-slate-600 hover:bg-pink-50 hover:text-pink-700",
     danger: "bg-red-50 text-red-600 hover:bg-red-100 focus:ring-red-500",
     white: "bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm border border-white/20",
   };
@@ -72,8 +74,33 @@ const Badge: React.FC<{ children: React.ReactNode; color?: string }> = ({ childr
   </span>
 );
 
+// --- Custom Brand Components ---
+
+const BrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg', light?: boolean }> = ({ size = 'md', light = false }) => {
+  const sizes = {
+    sm: { text: 'text-2xl', sub: 'text-[0.5rem]' },
+    md: { text: 'text-4xl', sub: 'text-[0.6rem]' },
+    lg: { text: 'text-6xl', sub: 'text-xs' },
+  };
+
+  const textColor = light ? 'text-white' : 'text-slate-800';
+  
+  return (
+    <div className="flex flex-col items-center">
+      <div className={`flex items-baseline leading-none select-none relative group cursor-default`}>
+        <span className={`font-script ${sizes[size].text} ${textColor} mr-1`}>Candi</span>
+        <span className={`font-sans font-black ${sizes[size].text} text-pink-500 tracking-tight group-hover:text-pink-400 transition-colors`}>STOP</span>
+        <Leaf className="text-lime-400 absolute -top-2 -right-6 rotate-12 drop-shadow-sm group-hover:rotate-45 transition-transform duration-500" size={size === 'lg' ? 40 : size === 'md' ? 24 : 16} fill="currentColor" />
+      </div>
+      <span className={`font-sans ${sizes[size].sub} tracking-[0.2em] uppercase mt-1 ${light ? 'text-pink-100/80' : 'text-slate-400'}`}>
+        Saúde Íntima Natural
+      </span>
+    </div>
+  );
+};
+
 // --- Constants ---
-const AVAILABLE_TAGS = ["Estratégia", "Vendas", "Equipe", "Produto", "Design", "Engenharia", "RH", "Cliente"];
+const AVAILABLE_TAGS = ["Consulta", "Retorno", "Exame", "Urgência", "Terapia", "Procedimento", "Estética", "Outros"];
 const INITIAL_FORM_STATE: MeetingFormData = {
   title: '',
   date: getTodayString(),
@@ -102,20 +129,21 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-        <div className="bg-indigo-600 p-8 text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white/10 blur-2xl"></div>
-          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 rounded-full bg-white/10 blur-2xl"></div>
-          
-          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm relative z-10">
-            <CalendarDays size={32} className="text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-white relative z-10">Cronos</h1>
-          <p className="text-indigo-100 mt-2 relative z-10">Gestão Inteligente de Reuniões</p>
+    <div className="min-h-screen bg-[#2e1065] flex items-center justify-center p-4 font-sans relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-pink-600/20 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 rounded-full blur-[120px]"></div>
+      </div>
+
+      <div className="bg-white/10 backdrop-blur-xl w-full max-w-md rounded-3xl shadow-2xl border border-white/10 overflow-hidden relative z-10 animate-[fadeIn_0.5s_ease-out]">
+        <div className="bg-[#2e1065]/50 p-10 text-center border-b border-white/5">
+          <BrandLogo size="lg" light />
         </div>
         
-        <div className="p-8">
+        <div className="p-8 bg-white">
+          <h2 className="text-xl font-bold text-slate-800 mb-6 text-center">Acesso ao Sistema</h2>
+          
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100 text-center flex items-center justify-center gap-2">
@@ -125,13 +153,13 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
             
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Usuário</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <div className="relative group">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-pink-500 transition-colors" size={18} />
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-all"
                   placeholder="Seu usuário de acesso"
                 />
               </div>
@@ -139,13 +167,13 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Senha</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <div className="relative group">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-pink-500 transition-colors" size={18} />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -153,14 +181,14 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
 
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/30 transition-all shadow-lg shadow-indigo-200 mt-4 flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white py-3.5 rounded-xl font-bold hover:opacity-90 focus:ring-4 focus:ring-pink-500/30 transition-all shadow-lg shadow-pink-200/50 mt-4 flex items-center justify-center gap-2 active:scale-[0.98]"
             >
-              Entrar no Sistema <ArrowRight size={18} />
+              Entrar <ArrowRight size={18} />
             </button>
           </form>
           
-          <div className="mt-6 text-center text-xs text-slate-400">
-            &copy; {new Date().getFullYear()} Cronos App. Todos os direitos reservados.
+          <div className="mt-8 text-center text-xs text-slate-400">
+            &copy; {new Date().getFullYear()} CandiSTOP. Todos os direitos reservados.
           </div>
         </div>
       </div>
@@ -170,15 +198,20 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
 
 // 2. Dashboard Component (Authenticated View)
 const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onLogout }) => {
-  const storageKey = `cronos_meetings_${user}`;
+  const storageKey = `candistop_meetings_${user}`;
+  
+  // Mobile Sidebar State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [meetings, setMeetings] = useState<Meeting[]>(() => {
     try {
       const saved = localStorage.getItem(storageKey);
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      console.error("Erro ao carregar reuniões:", e);
-      return [];
+      console.error("Critical: Failed to parse meetings from storage.", e);
+      return []; // Fail safe to empty array
     }
   });
 
@@ -193,7 +226,6 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
   useEffect(() => {
     setIsSaving(true);
     localStorage.setItem(storageKey, JSON.stringify(meetings));
-    // Simulate network save delay for visual reassurance
     const timer = setTimeout(() => setIsSaving(false), 800);
     return () => clearTimeout(timer);
   }, [meetings, storageKey]);
@@ -208,19 +240,28 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
         return matchesStatus && matchesSearch;
       })
       .sort((a, b) => {
-        // Strict Sort: Date (asc) then Time (asc)
-        const dateA = new Date(`${a.date}T${a.time}`);
-        const dateB = new Date(`${b.date}T${b.time}`);
+        // Strict Sort with Fail-safe for invalid dates
+        const dateA = new Date(`${a.date}T${a.time || '00:00'}`);
+        const dateB = new Date(`${b.date}T${b.time || '00:00'}`);
+        // Handle invalid dates (push to end)
+        if (isNaN(dateA.getTime())) return 1;
+        if (isNaN(dateB.getTime())) return -1;
         return dateA.getTime() - dateB.getTime();
       });
   }, [meetings, filter]);
 
   const nextMeeting = useMemo(() => {
     const now = new Date();
-    const scheduled = meetings.filter(m => m.status === 'scheduled');
-    scheduled.sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
-    const upcoming = scheduled.find(m => new Date(`${m.date}T${m.time}`) > now);
-    return upcoming || null;
+    // Strict sort for upcoming logic
+    const scheduled = meetings
+      .filter(m => m.status === 'scheduled')
+      .sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.time || '00:00'}`);
+        const dateB = new Date(`${b.date}T${b.time || '00:00'}`);
+        return dateA.getTime() - dateB.getTime();
+      });
+    
+    return scheduled.find(m => new Date(`${m.date}T${m.time}`) > now) || null;
   }, [meetings]);
 
   // --- Handlers ---
@@ -252,6 +293,12 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
 
   const handleSaveMeeting = (e: React.FormEvent) => {
     e.preventDefault();
+    // Basic validation
+    if (!formData.title.trim() || !formData.date || !formData.time) {
+      alert("Por favor, preencha os campos obrigatórios.");
+      return;
+    }
+
     if (editingId) {
       setMeetings(prev => prev.map(m => m.id === editingId ? { ...m, ...formData } : m));
     } else {
@@ -268,7 +315,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
   };
 
   const deleteMeeting = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta reunião?')) {
+    if (confirm('Tem certeza que deseja excluir este agendamento?')) {
       setMeetings(prev => prev.filter(m => m.id !== id));
     }
   };
@@ -282,7 +329,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
 
   const handleGenerateAgenda = async () => {
     if (!formData.title) {
-      alert("Por favor, insira um título antes de gerar a pauta.");
+      alert("Por favor, insira um título/paciente antes de gerar.");
       return;
     }
     setIsGenerating(true);
@@ -299,49 +346,64 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
   }, [meetings]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-900">
+    <div className="min-h-screen bg-[#fdf4ff] flex flex-col md:flex-row font-sans text-slate-900 overflow-x-hidden">
       
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col h-auto md:h-screen sticky top-0 z-10">
-        <div className="p-6 border-b border-slate-100 flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-            <CalendarDays size={20} />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">Cronos</h1>
+      {/* --- Sidebar (Desktop: Fixed/Sticky, Mobile: Drawer) --- */}
+      
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-72 bg-[#2e1065] text-white shadow-2xl transform transition-transform duration-300 ease-in-out
+        md:translate-x-0 md:static md:h-screen md:sticky md:top-0
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="p-8 border-b border-white/10 flex flex-col items-center relative">
+          <BrandLogo size="md" light />
+          {/* Close button for mobile */}
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="absolute top-4 right-4 text-white/50 hover:text-white md:hidden"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        <nav className="flex-1 p-4 flex flex-col overflow-y-auto">
+        <nav className="flex-1 p-4 flex flex-col overflow-y-auto space-y-1 custom-scrollbar">
           {/* User Info */}
-          <div className="mb-6 flex items-center gap-3 px-3 py-3 bg-gradient-to-r from-slate-50 to-white rounded-lg border border-slate-200">
-            <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 ring-2 ring-white shadow-sm">
-               <User size={18} />
+          <div className="mb-8 flex items-center gap-3 px-4 py-4 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm">
+            <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center text-white ring-2 ring-white/20 shadow-lg shrink-0">
+               <User size={20} />
             </div>
             <div className="overflow-hidden">
-              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Logado como</p>
-              <p className="text-sm font-bold text-slate-800 truncate">{user}</p>
+              <p className="text-[10px] text-pink-200 font-bold uppercase tracking-wider">Logado como</p>
+              <p className="text-sm font-bold text-white truncate" title={user}>{user}</p>
             </div>
           </div>
 
-          <div className="space-y-1">
-            <button onClick={() => setFilter({ ...filter, status: 'all' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'all' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-              <LayoutDashboard size={18} /> Visão Geral
-              <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.total}</span>
-            </button>
-            
-            <button onClick={() => setFilter({ ...filter, status: 'scheduled' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'scheduled' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-              <Calendar size={18} /> Agendadas
-              <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.scheduled}</span>
-            </button>
-            
-            <button onClick={() => setFilter({ ...filter, status: 'completed' })} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter.status === 'completed' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-              <CheckCircle2 size={18} /> Finalizadas
-              <span className="ml-auto bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs font-bold">{stats.completed}</span>
-            </button>
-          </div>
+          <button onClick={() => { setFilter({ ...filter, status: 'all' }); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${filter.status === 'all' ? 'bg-pink-600 text-white shadow-lg shadow-pink-900/20' : 'text-purple-200 hover:bg-white/5 hover:text-white'}`}>
+            <LayoutDashboard size={18} /> Visão Geral
+            <span className={`ml-auto py-0.5 px-2 rounded-full text-xs font-bold ${filter.status === 'all' ? 'bg-white/20 text-white' : 'bg-white/5 text-purple-300'}`}>{stats.total}</span>
+          </button>
+          
+          <button onClick={() => { setFilter({ ...filter, status: 'scheduled' }); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${filter.status === 'scheduled' ? 'bg-pink-600 text-white shadow-lg shadow-pink-900/20' : 'text-purple-200 hover:bg-white/5 hover:text-white'}`}>
+            <Calendar size={18} /> Agendamentos
+            <span className={`ml-auto py-0.5 px-2 rounded-full text-xs font-bold ${filter.status === 'scheduled' ? 'bg-white/20 text-white' : 'bg-white/5 text-purple-300'}`}>{stats.scheduled}</span>
+          </button>
+          
+          <button onClick={() => { setFilter({ ...filter, status: 'completed' }); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${filter.status === 'completed' ? 'bg-pink-600 text-white shadow-lg shadow-pink-900/20' : 'text-purple-200 hover:bg-white/5 hover:text-white'}`}>
+            <CheckCircle2 size={18} /> Finalizados
+            <span className={`ml-auto py-0.5 px-2 rounded-full text-xs font-bold ${filter.status === 'completed' ? 'bg-white/20 text-white' : 'bg-white/5 text-purple-300'}`}>{stats.completed}</span>
+          </button>
 
-          <div className="mt-auto pt-4 border-t border-slate-100">
-             <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors group">
-               <LogOut size={18} className="group-hover:text-red-600" /> 
+          <div className="mt-auto pt-6 border-t border-white/10">
+             <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-pink-300 hover:bg-white/5 hover:text-white rounded-xl transition-colors group">
+               <LogOut size={18} className="group-hover:text-pink-400 transition-colors" /> 
                <span>Sair do Sistema</span>
              </button>
           </div>
@@ -349,87 +411,115 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
       </aside>
 
       {/* Main Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 md:px-8 flex-shrink-0 z-20">
-          <div className="flex flex-col">
-            <h2 className="text-lg font-semibold text-slate-800 leading-tight">
-              {filter.status === 'all' ? 'Visão Geral' : filter.status === 'scheduled' ? 'Próximos Compromissos' : 'Histórico de Reuniões'}
-            </h2>
-            <div className="flex items-center gap-1.5 text-xs font-medium mt-0.5">
-               {isSaving ? (
-                 <span className="flex items-center gap-1 text-indigo-500 animate-pulse"><Save size={12} /> Salvando...</span>
-               ) : (
-                 <span className="flex items-center gap-1 text-green-600"><CloudCheck size={12} /> Dados salvos e seguros</span>
-               )}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[#fdf4ff] relative">
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-pink-100 flex items-center justify-between px-4 md:px-10 flex-shrink-0 z-20 sticky top-0">
+          
+          {/* Mobile Menu Toggle & Title */}
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+              aria-label="Abrir menu"
+            >
+              <Menu size={24} />
+            </button>
+
+            <div className="flex flex-col">
+              <h2 className="text-lg md:text-xl font-bold text-slate-800 leading-tight">
+                {filter.status === 'all' ? 'Visão Geral' : filter.status === 'scheduled' ? 'Próximos Agendamentos' : 'Histórico'}
+              </h2>
+              <div className="flex items-center gap-1.5 text-xs font-medium mt-0.5">
+                 {isSaving ? (
+                   <span className="flex items-center gap-1 text-pink-500 animate-pulse"><Save size={12} /> Salvando...</span>
+                 ) : (
+                   <span className="flex items-center gap-1 text-emerald-600"><CloudCheck size={12} /> Sincronizado</span>
+                 )}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="relative w-48 md:w-80 hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <div className="flex items-center gap-3">
+            <div className="relative w-48 md:w-80 hidden md:block group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-300 group-focus-within:text-pink-500 transition-colors" size={18} />
               <input 
                 type="text" 
-                placeholder="Buscar reunião..." 
+                placeholder="Buscar paciente..." 
                 value={filter.search}
                 onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-pink-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all shadow-sm placeholder-pink-200"
               />
             </div>
-            <Button onClick={() => handleOpenModal()} className="shadow-lg shadow-indigo-200 hover:shadow-indigo-300 gap-2 px-3 md:px-4">
-               <Plus size={18} /> <span className="hidden md:inline">Nova Reunião</span>
+            <Button onClick={() => handleOpenModal()} className="shadow-lg shadow-pink-200 hover:shadow-pink-300 gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl font-bold bg-pink-600 hover:bg-pink-700 whitespace-nowrap">
+               <Plus size={20} /> <span className="hidden md:inline">Novo</span>
             </Button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth">
-          <div className="max-w-7xl mx-auto space-y-8">
+        {/* Mobile Search Bar (Visible only on mobile below header) */}
+        <div className="md:hidden px-4 py-2 bg-white/50 border-b border-pink-50">
+           <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-300" size={16} />
+              <input 
+                type="text" 
+                placeholder="Buscar paciente..." 
+                value={filter.search}
+                onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+                className="w-full pl-9 pr-4 py-2 bg-white border border-pink-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 placeholder-pink-200"
+              />
+            </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 md:p-10 scroll-smooth">
+          <div className="max-w-7xl mx-auto space-y-8 pb-10">
             
             {/* NEXT MEETING HERO SECTION */}
             {filter.status !== 'completed' && !filter.search && (
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-xl">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2e1065] to-[#4c1d95] text-white shadow-2xl group transition-all hover:shadow-pink-900/20">
                 {/* Decorative Background Elements */}
-                <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-black/10 blur-3xl"></div>
+                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-pink-500/20 blur-[60px] group-hover:bg-pink-500/30 transition-all duration-700"></div>
+                <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-60 h-60 rounded-full bg-lime-400/10 blur-[50px]"></div>
                 
-                <div className="relative z-10 p-6 md:p-8">
-                  <div className="flex items-center gap-2 mb-4 text-indigo-100">
-                    <Timer size={20} className="animate-pulse" />
-                    <span className="text-sm font-semibold uppercase tracking-wider">Próximo Compromisso</span>
+                <div className="relative z-10 p-6 md:p-10">
+                  <div className="flex items-center gap-2 mb-6 text-pink-200">
+                    <div className="bg-pink-500/20 p-1.5 rounded-lg animate-pulse">
+                      <Timer size={20} className="text-pink-300" />
+                    </div>
+                    <span className="text-sm font-bold uppercase tracking-widest">Próximo Compromisso</span>
                   </div>
 
                   {nextMeeting ? (
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                       <div className="space-y-4 flex-1">
-                        <h1 className="text-3xl md:text-4xl font-bold leading-tight">{nextMeeting.title}</h1>
-                        <div className="flex flex-wrap items-center gap-6 text-indigo-100">
-                          <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-sm">
-                            <Calendar size={18} />
-                            <span className="font-medium">{new Date(nextMeeting.date).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                        <h1 className="text-3xl md:text-5xl font-bold leading-tight font-script tracking-wide break-words">{nextMeeting.title}</h1>
+                        <div className="flex flex-wrap items-center gap-3 md:gap-4 text-pink-100">
+                          <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl backdrop-blur-md border border-white/5">
+                            <Calendar size={18} className="text-pink-300 shrink-0" />
+                            <span className="font-medium text-sm md:text-base">{new Date(nextMeeting.date).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'long' })}</span>
                           </div>
-                          <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-sm">
-                            <Clock size={18} />
+                          <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl backdrop-blur-md border border-white/5">
+                            <Clock size={18} className="text-pink-300 shrink-0" />
                             <span className="font-medium text-lg">{nextMeeting.time}</span>
                           </div>
                           {nextMeeting.location && (
-                            <div className="flex items-center gap-2">
-                              <MapPin size={18} />
-                              <span>{nextMeeting.location}</span>
+                            <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl backdrop-blur-md border border-white/5 max-w-full">
+                              <MapPin size={18} className="text-pink-300 shrink-0" />
+                              <span className="truncate">{nextMeeting.location}</span>
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="flex flex-col gap-2 min-w-[140px]">
-                         <Button variant="white" onClick={() => handleOpenModal(nextMeeting)}>
+                      <div className="flex flex-col gap-3 min-w-[160px]">
+                         <Button variant="white" onClick={() => handleOpenModal(nextMeeting)} className="bg-white text-purple-900 hover:bg-pink-50 font-bold border-none shadow-lg">
                             Ver Detalhes
                          </Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="py-4 text-center md:text-left">
-                      <h3 className="text-2xl font-bold text-white mb-2">Agenda Livre!</h3>
-                      <p className="text-indigo-100">Você não tem reuniões agendadas para o futuro próximo. Aproveite para organizar suas tarefas ou criar novos planos.</p>
-                      <Button variant="white" onClick={() => handleOpenModal()} className="mt-4">
-                        Agendar Agora
+                    <div className="py-6 text-center md:text-left">
+                      <h3 className="text-3xl font-bold text-white mb-2 font-script">Agenda Livre!</h3>
+                      <p className="text-pink-200 max-w-lg">Você não tem agendamentos para o futuro próximo. Aproveite para organizar seus prontuários ou descansar.</p>
+                      <Button variant="white" onClick={() => handleOpenModal()} className="mt-6 bg-pink-600 border-none hover:bg-pink-500">
+                        Novo Agendamento
                       </Button>
                     </div>
                   )}
@@ -440,79 +530,79 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
             {/* LIST OF MEETINGS */}
             <div>
                {filteredMeetings.length > 0 && (
-                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
                      <CalendarClock size={16} />
                      Linha do Tempo
                   </h3>
                )}
 
                {filteredMeetings.length === 0 ? (
-                 <div className="h-64 flex flex-col items-center justify-center text-slate-400 bg-white rounded-2xl border border-slate-200 border-dashed">
-                   <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                     <Calendar size={32} className="text-slate-300" />
+                 <div className="h-80 flex flex-col items-center justify-center text-slate-400 bg-white rounded-3xl border border-dashed border-pink-200 p-4 text-center">
+                   <div className="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                     <Calendar size={40} className="text-pink-300" />
                    </div>
-                   <p className="text-lg font-medium text-slate-600">Nenhuma reunião encontrada</p>
-                   <p className="text-sm">Ajuste os filtros ou crie um novo evento.</p>
+                   <p className="text-xl font-bold text-slate-600">Nenhum agendamento encontrado</p>
+                   <p className="text-sm text-pink-300 mt-2">Ajuste os filtros ou crie um novo evento.</p>
                  </div>
                ) : (
                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                    {filteredMeetings.map(meeting => (
-                     <div key={meeting.id} className={`group relative bg-white rounded-xl border transition-all duration-300 hover:-translate-y-1 ${meeting.status === 'completed' ? 'border-slate-200 bg-slate-50/50 opacity-75' : 'border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-300'}`}>
-                       <div className="p-5">
-                         <div className="flex items-start justify-between mb-4">
-                           <div className="flex-1">
-                             <div className="flex items-center gap-2 mb-1">
-                                <h3 className={`font-bold text-lg leading-tight ${meeting.status === 'completed' ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{meeting.title}</h3>
-                                {meeting.status === 'completed' && <Badge color="bg-green-100 text-green-700">Finalizada</Badge>}
+                     <div key={meeting.id} className={`group relative bg-white rounded-2xl border transition-all duration-300 hover:-translate-y-1 overflow-hidden ${meeting.status === 'completed' ? 'border-slate-200 bg-slate-50/50 opacity-60' : 'border-white shadow-sm hover:shadow-xl hover:shadow-pink-100 hover:border-pink-200'}`}>
+                       <div className="p-6">
+                         <div className="flex items-start justify-between mb-5">
+                           <div className="flex-1 min-w-0 pr-4">
+                             <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                <h3 className={`font-bold text-xl leading-tight truncate w-full md:w-auto ${meeting.status === 'completed' ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{meeting.title}</h3>
+                                {meeting.status === 'completed' && <Badge color="bg-emerald-100 text-emerald-700">Finalizada</Badge>}
                              </div>
                              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mt-3">
-                               <div className={`flex items-center gap-1.5 font-medium ${meeting.status !== 'completed' ? 'text-indigo-600' : ''}`}>
-                                 <Calendar size={14} />
+                               <div className={`flex items-center gap-1.5 font-bold ${meeting.status !== 'completed' ? 'text-pink-600' : ''}`}>
+                                 <Calendar size={16} />
                                  {new Date(meeting.date).toLocaleDateString('pt-BR')}
                                </div>
                                <div className="flex items-center gap-1.5">
-                                 <Clock size={14} />
+                                 <Clock size={16} />
                                  {meeting.time}
                                </div>
-                               <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded text-xs">
-                                 <Timer size={12} />
+                               <div className="flex items-center gap-1.5 bg-pink-50 text-pink-700 px-2 py-1 rounded-md text-xs font-bold">
+                                 <Timer size={14} />
                                  {meeting.duration} min
                                </div>
                              </div>
-                             {meeting.location && <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-2"><MapPin size={14} />{meeting.location}</div>}
+                             {meeting.location && <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-3 truncate"><MapPin size={16} className="text-pink-400 shrink-0" />{meeting.location}</div>}
                            </div>
                            
                            {/* Actions */}
-                           <div className="flex items-center gap-1">
-                             <button onClick={() => toggleStatus(meeting.id)} title={meeting.status === 'completed' ? "Reabrir" : "Finalizar"} className={`p-2 rounded-full transition-colors ${meeting.status === 'completed' ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-slate-300 hover:text-green-600 hover:bg-green-50'}`}>
-                               {meeting.status === 'completed' ? <CheckCircle2 size={22} /> : <Circle size={22} />}
+                           <div className="flex items-center gap-2 shrink-0">
+                             <button onClick={() => toggleStatus(meeting.id)} title={meeting.status === 'completed' ? "Reabrir" : "Finalizar"} className={`p-2 rounded-full transition-all ${meeting.status === 'completed' ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' : 'text-slate-300 hover:text-emerald-600 hover:bg-emerald-50'}`}>
+                               {meeting.status === 'completed' ? <CheckCircle2 size={24} /> : <Circle size={24} />}
                              </button>
                              <div className="relative group/menu">
-                                <button className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"><MoreVertical size={20} /></button>
-                                <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-slate-200 rounded-lg shadow-lg opacity-0 group-hover/menu:opacity-100 invisible group-hover/menu:visible transition-all z-20 flex flex-col p-1">
-                                  <button onClick={() => handleOpenModal(meeting)} className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-md text-left"><Edit2 size={14} /> Editar</button>
-                                  <button onClick={() => deleteMeeting(meeting.id)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md text-left"><Trash2 size={14} /> Excluir</button>
+                                <button className="p-2 text-slate-300 hover:text-pink-600 hover:bg-pink-50 rounded-full transition-colors"><MoreVertical size={20} /></button>
+                                <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-slate-100 rounded-xl shadow-xl shadow-slate-200/50 opacity-0 group-hover/menu:opacity-100 invisible group-hover/menu:visible transition-all z-20 flex flex-col p-1.5">
+                                  <button onClick={() => handleOpenModal(meeting)} className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-pink-50 hover:text-pink-700 rounded-lg text-left transition-colors"><Edit2 size={16} /> Editar</button>
+                                  <button onClick={() => deleteMeeting(meeting.id)} className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 rounded-lg text-left transition-colors"><Trash2 size={16} /> Excluir</button>
                                 </div>
                              </div>
                            </div>
                          </div>
                          
                          {meeting.tags.length > 0 && (
-                           <div className="flex flex-wrap gap-2 mb-4 pt-2 border-t border-slate-50">
+                           <div className="flex flex-wrap gap-2 mb-5 pt-3 border-t border-slate-50">
                              {meeting.tags.map(tag => (
-                               <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-xs font-semibold text-slate-600 border border-slate-200"><Tag size={10} /> {tag}</span>
+                               <span key={tag} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-50 text-xs font-bold text-slate-600 border border-slate-100"><Tag size={12} className="text-pink-400" /> {tag}</span>
                              ))}
                            </div>
                          )}
-                         <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 group-hover:border-indigo-100 transition-colors">
-                           <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Sparkles size={10} /> Pauta</h4>
-                           <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto custom-scrollbar">
-                             {meeting.description || <span className="text-slate-400 italic">Sem descrição definida.</span>}
+                         <div className="bg-pink-50/50 rounded-xl p-4 border border-pink-100/50 group-hover:border-pink-200 transition-colors">
+                           <h4 className="text-[10px] font-bold text-pink-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Sparkles size={12} /> Detalhes</h4>
+                           <div className="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed max-h-24 overflow-y-auto custom-scrollbar">
+                             {meeting.description || <span className="text-slate-400 italic">Sem observações.</span>}
                            </div>
                          </div>
                        </div>
                        {/* Left colored border based on status */}
-                       <div className={`absolute left-0 top-4 bottom-4 w-1 rounded-r-full transition-colors ${meeting.status === 'completed' ? 'bg-green-400' : 'bg-indigo-500'}`}></div>
+                       <div className={`absolute left-0 top-0 bottom-0 w-1.5 transition-colors ${meeting.status === 'completed' ? 'bg-emerald-400' : 'bg-pink-500'}`}></div>
                      </div>
                    ))}
                  </div>
@@ -524,45 +614,45 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] scale-100 animate-[fadeIn_0.2s_ease-out]">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                 <div className={`w-2 h-8 rounded-full ${editingId ? 'bg-indigo-500' : 'bg-green-500'}`}></div>
-                 <h2 className="text-xl font-bold text-slate-800">{editingId ? 'Editar Reunião' : 'Nova Reunião'}</h2>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#2e1065]/80 backdrop-blur-sm transition-all duration-300">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] scale-100 animate-[fadeIn_0.2s_ease-out] border border-white/20">
+            <div className="flex items-center justify-between px-6 md:px-8 py-5 border-b border-slate-100 bg-gradient-to-r from-pink-50 to-white">
+              <div className="flex items-center gap-3">
+                 <div className={`w-3 h-3 rounded-full shadow-sm ring-4 ring-white ${editingId ? 'bg-pink-500' : 'bg-emerald-500'}`}></div>
+                 <h2 className="text-lg md:text-xl font-bold text-slate-800">{editingId ? 'Editar Agendamento' : 'Novo Agendamento'}</h2>
               </div>
-              <button onClick={handleCloseModal} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 p-1 rounded-full hover:bg-slate-200"><X size={20} /></button>
+              <button onClick={handleCloseModal} className="text-slate-400 hover:text-pink-600 transition-colors bg-white p-2 rounded-full hover:bg-pink-50 shadow-sm border border-slate-100"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSaveMeeting} className="flex-1 overflow-y-auto p-6">
+            <form onSubmit={handleSaveMeeting} className="flex-1 overflow-y-auto p-6 md:p-8">
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">Título da Reunião</label>
-                  <input required type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Planejamento de Vendas Q3" className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-medium text-lg" />
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Título / Paciente <span className="text-red-500">*</span></label>
+                  <input required type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Ex: Consulta Dra. Ana - Maria Silva" className="w-full px-5 py-3.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-all font-medium text-lg placeholder-slate-400" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div><label className="block text-sm font-bold text-slate-700 mb-1">Data</label><input required type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none" /></div>
-                  <div><label className="block text-sm font-bold text-slate-700 mb-1">Horário</label><input required type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none" /></div>
-                  <div><label className="block text-sm font-bold text-slate-700 mb-1">Duração (min)</label><input type="number" min="15" step="15" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none" /></div>
+                  <div><label className="block text-sm font-bold text-slate-700 mb-2">Data <span className="text-red-500">*</span></label><input required type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none bg-white" /></div>
+                  <div><label className="block text-sm font-bold text-slate-700 mb-2">Horário <span className="text-red-500">*</span></label><input required type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none bg-white" /></div>
+                  <div><label className="block text-sm font-bold text-slate-700 mb-2">Duração (min)</label><input type="number" min="15" step="15" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none bg-white" /></div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">Local / Link</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Local / Sala</label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Sala de Reuniões 1 ou Link do Google Meet" className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Consultório 1" className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none" />
                   </div>
                 </div>
                 <div>
                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-bold text-slate-700">Pauta da Reunião</label>
-                      <button type="button" onClick={handleGenerateAgenda} disabled={isGenerating} className="text-xs flex items-center gap-1.5 text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md hover:bg-indigo-100 font-bold disabled:opacity-50 transition-colors"><Sparkles size={14} /> {isGenerating ? 'Criando mágica...' : 'Gerar com IA'}</button>
+                      <label className="block text-sm font-bold text-slate-700">Observações / Pauta</label>
+                      <button type="button" onClick={handleGenerateAgenda} disabled={isGenerating} className="text-xs flex items-center gap-1.5 text-pink-600 bg-pink-50 px-3 py-1.5 rounded-lg hover:bg-pink-100 font-bold disabled:opacity-50 transition-colors"><Sparkles size={14} /> {isGenerating ? 'Gerando com IA...' : 'Sugestão IA'}</button>
                    </div>
-                   <textarea rows={5} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} disabled={isGenerating} placeholder="- Tópico 1&#10;- Tópico 2&#10;- Definições finais" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-mono text-sm leading-relaxed disabled:opacity-70" />
+                   <textarea rows={5} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} disabled={isGenerating} placeholder="Detalhes do procedimento, histórico breve, etc." className="w-full px-5 py-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-pink-500 outline-none resize-none font-sans text-sm leading-relaxed disabled:opacity-70" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Etiquetas</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-3">Etiquetas</label>
                   <div className="flex flex-wrap gap-2">
                     {AVAILABLE_TAGS.map(tag => (
-                      <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${formData.tags.includes(tag) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'}`}>{tag}</button>
+                      <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${formData.tags.includes(tag) ? 'bg-pink-600 text-white border-pink-600 shadow-lg shadow-pink-200' : 'bg-white text-slate-500 border-slate-200 hover:border-pink-300 hover:text-pink-600'}`}>{tag}</button>
                     ))}
                   </div>
                 </div>
@@ -570,7 +660,7 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
             </form>
             <div className="p-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50">
               <Button type="button" variant="ghost" onClick={handleCloseModal}>Cancelar</Button>
-              <Button onClick={handleSaveMeeting} className="pl-3 pr-5"><CheckCircle2 size={18} className="mr-2" /> {editingId ? 'Salvar Alterações' : 'Agendar Agora'}</Button>
+              <Button onClick={handleSaveMeeting} className="pl-4 pr-6 py-3 bg-pink-600 hover:bg-pink-700 shadow-lg shadow-pink-200"><CheckCircle2 size={18} className="mr-2" /> {editingId ? 'Salvar Alterações' : 'Confirmar Agendamento'}</Button>
             </div>
           </div>
         </div>
@@ -583,17 +673,17 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<string | null>(() => {
-    return localStorage.getItem('cronos_currentUser');
+    return localStorage.getItem('candistop_currentUser');
   });
 
   const handleLogin = (user: string) => {
     setCurrentUser(user);
-    localStorage.setItem('cronos_currentUser', user);
+    localStorage.setItem('candistop_currentUser', user);
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('cronos_currentUser');
+    localStorage.removeItem('candistop_currentUser');
   };
 
   if (!currentUser) {

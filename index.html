@@ -3,23 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cronos - Gestor de Reuniões</title>
+    <title>CandiSTOP - Saúde Íntima Natural</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
+              script: ['Dancing Script', 'cursive'],
             },
             colors: {
-              primary: {
-                50: '#eff6ff',
-                100: '#dbeafe',
-                500: '#3b82f6',
-                600: '#2563eb',
-                700: '#1d4ed8',
+              brand: {
+                dark: '#2e1065', // Deep purple background
+                primary: '#ec4899', // Pink from STOP
+                secondary: '#a3e635', // Green form leaves
+                surface: '#fdf4ff', // Light pinkish background
               }
             }
           }
@@ -29,7 +29,7 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #f8fafc;
+        background-color: #fdf4ff; /* Light pink/purple tint */
       }
       /* Custom scrollbar for better aesthetics */
       ::-webkit-scrollbar {
@@ -40,11 +40,11 @@
         background: transparent; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #cbd5e1; 
+        background: #e879f9; 
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8; 
+        background: #d946ef; 
       }
     </style>
   <script type="importmap">

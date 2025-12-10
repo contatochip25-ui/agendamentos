@@ -2,26 +2,31 @@ import { GoogleGenAI } from "@google/genai";
 
 // Initialize the client safely
 const getClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.warn("API Key is missing. AI features will not work.");
+  try {
+    // Check if process is defined (avoids ReferenceError in some pure browser environments)
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      return new GoogleGenAI({ apiKey: process.env.API_KEY });
+    }
+    console.warn("API Key is missing in process.env. AI features will be disabled.");
+    return null;
+  } catch (e) {
+    console.error("Failed to initialize GenAI client:", e);
     return null;
   }
-  return new GoogleGenAI({ apiKey });
 };
 
 export const generateAgenda = async (title: string, duration: number): Promise<string> => {
   const client = getClient();
-  if (!client) return "Erro: Chave de API não configurada. Preencha manualmente.";
+  if (!client) return "⚠️ Funcionalidade indisponível: Chave de API não configurada.";
 
   try {
     const prompt = `
-      Crie uma pauta de reunião profissional e estruturada para uma reunião com o título: "${title}".
-      A duração da reunião é de ${duration} minutos.
+      Atue como uma assistente clínica. Crie uma pauta/resumo estruturado para um agendamento clínico com o título: "${title}".
+      A duração é de ${duration} minutos.
       
-      Retorne APENAS o conteúdo da pauta em formato Markdown limpo, com tópicos e tempos sugeridos para cada tópico.
-      Não inclua introduções como "Aqui está sua pauta". Seja direto.
-      Use português do Brasil.
+      Retorne APENAS o conteúdo em tópicos breves (Markdown).
+      Foque em: Anamnese, Procedimento/Exame e Orientações Finais.
+      Seja cordial e profissional. Use português do Brasil.
     `;
 
     const response = await client.models.generateContent({
@@ -29,9 +34,9 @@ export const generateAgenda = async (title: string, duration: number): Promise<s
       contents: prompt,
     });
 
-    return response.text || "Não foi possível gerar a pauta.";
+    return response.text || "Não foi possível gerar a sugestão.";
   } catch (error) {
     console.error("Error generating agenda:", error);
-    return "Erro ao conectar com a IA. Por favor, tente novamente ou escreva manualmente.";
+    return "Erro de conexão com a IA. Por favor, preencha manualmente.";
   }
 };
