@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, 
   Clock, 
@@ -21,8 +21,6 @@ import {
   Timer,
   ArrowRight,
   CalendarClock,
-  Download,
-  Upload,
   CloudCheck,
   Save
 } from 'lucide-react';
@@ -173,7 +171,6 @@ const LoginScreen: React.FC<{ onLogin: (user: string) => void }> = ({ onLogin })
 // 2. Dashboard Component (Authenticated View)
 const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onLogout }) => {
   const storageKey = `cronos_meetings_${user}`;
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [meetings, setMeetings] = useState<Meeting[]>(() => {
     try {
@@ -227,58 +224,6 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
   }, [meetings]);
 
   // --- Handlers ---
-
-  const handleExport = () => {
-    const dataStr = JSON.stringify(meetings, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `cronos_backup_${user}_${getTodayString()}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!confirm('ATENÇÃO: Isso irá substituir todas as reuniões atuais pelos dados do arquivo. Deseja continuar?')) {
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const result = e.target?.result as string;
-        const imported = JSON.parse(result);
-        
-        if (Array.isArray(imported)) {
-          // Validate structure loosely
-          const isValid = imported.every(m => m.id && m.title && m.date);
-          if (isValid) {
-            setMeetings(imported);
-            alert('Dados restaurados com sucesso!');
-          } else {
-            alert('Arquivo inválido: Formato de dados incorreto.');
-          }
-        } else {
-          alert('Arquivo inválido: Não contém uma lista de reuniões.');
-        }
-      } catch (err) {
-        console.error(err);
-        alert('Erro ao ler o arquivo. Verifique se é um backup válido.');
-      }
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    };
-    reader.readAsText(file);
-  };
 
   const handleOpenModal = (meeting?: Meeting) => {
     if (meeting) {
@@ -394,27 +339,10 @@ const Dashboard: React.FC<{ user: string; onLogout: () => void }> = ({ user, onL
             </button>
           </div>
 
-          <div className="mt-auto pt-6 border-t border-slate-100">
-             <h3 className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Dados & Backup</h3>
-             
-             <div className="space-y-1 mb-4">
-                <button onClick={handleExport} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
-                  <Download size={18} /> Fazer Backup (Salvar)
-                </button>
-                <button onClick={handleImportClick} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
-                  <Upload size={18} /> Restaurar Dados
-                </button>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleImport} 
-                  className="hidden" 
-                  accept=".json"
-                />
-             </div>
-             
-             <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors">
-               <LogOut size={18} /> Sair do Sistema
+          <div className="mt-auto pt-4 border-t border-slate-100">
+             <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors group">
+               <LogOut size={18} className="group-hover:text-red-600" /> 
+               <span>Sair do Sistema</span>
              </button>
           </div>
         </nav>
